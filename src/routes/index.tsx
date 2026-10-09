@@ -259,14 +259,6 @@ function Workspace() {
                 <strong>Shared course knowledge</strong> · Connected to Notion
               </span>
               {overview?.canRevise && (
-                <SourceActions
-                  onRefresh={(next, sourceId) => {
-                    setOverview(next);
-                    if (sourceId) setSelected(sourceId);
-                  }}
-                />
-              )}
-              {overview?.canRevise && (
                 <button
                   onClick={() => setDialogOpen(true)}
                   className="rounded border border-demo-foreground/30 bg-card px-2.5 py-1 font-medium hover:bg-secondary"
@@ -414,7 +406,15 @@ function Workspace() {
               </div>
             </div>
             {view === "chat" && (
-              <Composer onSend={ask} disabled={loading || !overview || !profile} />
+              <Composer
+                onSend={ask}
+                disabled={loading || !overview || !profile}
+                canRevise={!!overview?.canRevise}
+                onRefresh={(next, sourceId) => {
+                  setOverview(next);
+                  if (sourceId) setSelected(sourceId);
+                }}
+              />
             )}
           </main>
         </ResizablePanel>
@@ -712,7 +712,17 @@ function SourceDetail({ source, num }: { source: Source; num: number }) {
   );
 }
 
-function Composer({ onSend, disabled }: { onSend: (q: string) => void; disabled: boolean }) {
+function Composer({
+  onSend,
+  disabled,
+  canRevise,
+  onRefresh,
+}: {
+  onSend: (q: string) => void;
+  disabled: boolean;
+  canRevise: boolean;
+  onRefresh: (overview: ModuleOverview, selected?: string) => void;
+}) {
   const [v, setV] = useState("");
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -722,29 +732,36 @@ function Composer({ onSend, disabled }: { onSend: (q: string) => void; disabled:
   };
   return (
     <form onSubmit={submit} className="shrink-0 border-t bg-card px-4 py-3 lg:px-8 lg:py-4">
-      <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-xl border bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
-        <textarea
-          value={v}
-          onChange={(e) => setV(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit(e);
-            }
-          }}
-          rows={1}
-          placeholder="Ask a question about virtual machines and containers…"
-          aria-label="Question about this module"
-          maxLength={2000}
-          disabled={disabled}
-          className="max-h-32 min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none"
-        />
-        <button
-          disabled={disabled || !v.trim()}
-          className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
-        >
-          Ask
-        </button>
+      <div className="mx-auto max-w-3xl rounded-xl border bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
+        {canRevise && (
+          <div className="mb-2 px-1">
+            <SourceActions onRefresh={onRefresh} />
+          </div>
+        )}
+        <div className="flex items-end gap-2">
+          <textarea
+            value={v}
+            onChange={(e) => setV(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit(e);
+              }
+            }}
+            rows={1}
+            placeholder="Ask a question about virtual machines and containers…"
+            aria-label="Question about this module"
+            maxLength={2000}
+            disabled={disabled}
+            className="max-h-32 min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none"
+          />
+          <button
+            disabled={disabled || !v.trim()}
+            className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
+          >
+            Ask
+          </button>
+        </div>
       </div>
     </form>
   );
