@@ -179,3 +179,12 @@
     font-family: var(--font-serif);
   }
 }
+
+.graph-node:focus-visible {
+  outline: none;
+}
+.graph-node:focus-visible rect,
+.graph-node:hover rect {
+  stroke: var(--primary);
+  stroke-width: 2;
+}

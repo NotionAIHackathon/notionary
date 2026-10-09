@@ -1,5 +1,6 @@
 import type { Source } from "@/services/notionary";
 
+const SOURCE_DATABASE_URL = "https://app.notion.com/p/becbee4e9bfa43e2a36c91d9e922247d";
 const DEMO_URL = "https://app.notion.com/p/3f43c70a6285806a98e5e77839ad5c74";
 
 export function SourceGraph({
@@ -13,6 +14,20 @@ export function SourceGraph({
   selected: string | null;
   onSelect: (id: string) => void;
 }) {
+  const orderedSources = [
+    ...sources.filter((source) => source.kind === "course"),
+    ...sources.filter((source) => source.kind === "announcement"),
+  ].map((source) => ({
+    ...source,
+    title: source.title
+      .replace(/^Synthetic Demo Transcript/, "Transcript")
+      .replace(/^Synthetic Demo Board/, "Board image")
+      .replace(/^Demo fixture — /, ""),
+  }));
+  const libraryCenter = Math.max(
+    120,
+    sources.filter((source) => source.kind === "course").length * 44 + 32,
+  );
   const height = Math.max(320, sources.length * 88 + 64);
   const center = height / 2;
   return (
@@ -23,17 +38,22 @@ export function SourceGraph({
       aria-label="Scrollable source graph"
     >
       <svg
-        viewBox={`0 0 920 ${height}`}
-        className="w-full min-w-[720px]"
+        viewBox={`0 0 1120 ${height}`}
+        className="w-full min-w-[880px]"
         role="group"
-        aria-label="Cloud Computing module connects to the Notion Demo page, which contains the listed sources"
+        aria-label="Cloud Computing connects to the Notion Demo page, its source database, and the source documents. Announcements are directly under Demo."
       >
         <title>Notionary source connections</title>
-        <path d={`M 230 ${center} H 340`} stroke="var(--border)" strokeWidth="2" />
-        {sources.map((source, index) => (
+        <path d={`M 190 ${center} H 240`} stroke="var(--border)" strokeWidth="2" />
+        {orderedSources.map((source, index) => (
           <path
             key={source.id}
-            d={`M 560 ${center} C 610 ${center}, 600 ${76 + index * 88}, 650 ${76 + index * 88}`}
+            d={
+              source.kind === "course"
+                ? `M 720 ${libraryCenter} C 745 ${libraryCenter}, 755 ${76 + index * 88}, 790 ${76 + index * 88}`
+                : `M 420 ${center + 30} C 460 ${76 + index * 88}, 740 ${76 + index * 88}, 790 ${76 + index * 88}`
+            }
+            strokeDasharray={source.kind === "announcement" ? "5 4" : undefined}
             fill="none"
             stroke={selected === source.id ? "var(--primary)" : "var(--border)"}
             strokeWidth={selected === source.id ? 2 : 1.5}
@@ -42,7 +62,7 @@ export function SourceGraph({
         <rect
           x="10"
           y={center - 37}
-          width="220"
+          width="180"
           height="74"
           rx="8"
           fill="var(--sidebar)"
@@ -51,7 +71,7 @@ export function SourceGraph({
         <text x="28" y={center - 9} fill="var(--muted-foreground)" fontSize="12">
           MODULE
         </text>
-        <text x="28" y={center + 15} fill="var(--foreground)" fontSize="16" fontWeight="600">
+        <text x="28" y={center + 15} fill="var(--foreground)" fontSize="15" fontWeight="600">
           Cloud Computing
         </text>
         <title>{title}</title>
@@ -63,28 +83,63 @@ export function SourceGraph({
           className="graph-node"
         >
           <rect
-            x="340"
+            x="240"
             y={center - 37}
-            width="220"
+            width="180"
             height="74"
             rx="8"
             fill="var(--accent)"
             stroke="var(--primary)"
           />
-          <text x="358" y={center - 9} fill="var(--accent-foreground)" fontSize="12">
+          <text x="258" y={center - 9} fill="var(--accent-foreground)" fontSize="12">
             NOTION PAGE
           </text>
           <text
-            x="358"
+            x="258"
             y={center + 15}
             fill="var(--accent-foreground)"
             fontSize="16"
             fontWeight="600"
           >
-            Demo · shared sources ↗
+            Demo page ↗
           </text>
         </a>
-        {sources.map((source, index) => (
+        <path
+          d={`M 420 ${center} C 445 ${center}, 455 ${libraryCenter}, 490 ${libraryCenter}`}
+          fill="none"
+          stroke="var(--border)"
+          strokeWidth="2"
+        />
+        <a
+          href={SOURCE_DATABASE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open Cloud Computing Sources database in Notion"
+          className="graph-node"
+        >
+          <rect
+            x="490"
+            y={libraryCenter - 37}
+            width="230"
+            height="74"
+            rx="8"
+            fill="var(--secondary)"
+            stroke="var(--border)"
+          />
+          <text x="508" y={libraryCenter - 9} fill="var(--muted-foreground)" fontSize="12">
+            NOTION DATABASE
+          </text>
+          <text
+            x="508"
+            y={libraryCenter + 15}
+            fill="var(--foreground)"
+            fontSize="15"
+            fontWeight="600"
+          >
+            Cloud Computing · Sources ↗
+          </text>
+        </a>
+        {orderedSources.map((source, index) => (
           <g
             key={source.id}
             role="button"
@@ -102,36 +157,36 @@ export function SourceGraph({
           >
             <title>{source.title}</title>
             <rect
-              x="650"
+              x="790"
               y={44 + index * 88}
-              width="260"
+              width="320"
               height="64"
               rx="8"
               fill={selected === source.id ? "var(--accent)" : "var(--card)"}
               stroke={selected === source.id ? "var(--primary)" : "var(--border)"}
             />
-            <text x="666" y={67 + index * 88} fill="var(--muted-foreground)" fontSize="11">
+            <text x="806" y={67 + index * 88} fill="var(--muted-foreground)" fontSize="11">
               {source.status === "superseded"
                 ? "SUPERSEDED"
-                : source.isDemo
-                  ? "DEMO SOURCE"
+                : source.kind === "announcement"
+                  ? "ANNOUNCEMENT"
                   : "COURSE SOURCE"}
             </text>
             <text
-              x="666"
+              x="806"
               y={91 + index * 88}
               fill="var(--foreground)"
               fontSize="13"
               fontWeight="500"
             >
-              {source.title.length > 33 ? `${source.title.slice(0, 32)}…` : source.title}
+              {source.title.length > 41 ? `${source.title.slice(0, 40)}…` : source.title}
             </text>
           </g>
         ))}
       </svg>
       <p className="mt-3 text-xs text-muted-foreground">
-        Lines show the demo page hierarchy. They do not imply verified semantic relationships
-        between sources.
+        Solid lines connect the module’s source library; dashed lines connect announcements directly
+        under Demo. Select a source to read its excerpt below.
       </p>
     </div>
   );

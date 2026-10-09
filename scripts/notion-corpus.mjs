@@ -8,9 +8,15 @@ const env = Object.fromEntries(
       return [l.slice(0, i), l.slice(i + 1).replace(/^['"]|['"]$/g, "")];
     }),
 );
-async function get(path) {
+async function get(path, body) {
   const r = await fetch("https://api.notion.com/v1/" + path, {
-    headers: { Authorization: `Bearer ${env.NOTION_TOKEN}`, "Notion-Version": "2022-06-28" },
+    method: body ? "POST" : "GET",
+    headers: {
+      Authorization: `Bearer ${env.NOTION_TOKEN}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
   if (!r.ok) throw new Error(`Notion API returned ${r.status} for ${path}`);
   return r.json();
@@ -38,7 +44,8 @@ async function blocks(id) {
           .join("");
         if (text) out.push((b.type.startsWith("heading") ? "## " : "") + text);
       }
-      if (b.has_children && b.type !== "child_page") out.push(...(await blocks(b.id)));
+      if (b.has_children && b.type !== "child_page" && b.type !== "child_database")
+        out.push(...(await blocks(b.id)));
     }
     cursor = page.has_more ? page.next_cursor : undefined;
   } while (cursor);
@@ -104,8 +111,10 @@ const defs = [
   ],
 ];
 const sources = [];
-for (const [id, title, reference, select] of defs) {
+for (const [id, fallbackTitle, reference, select] of defs) {
   const page = await get("pages/" + id);
+  const titleProperty = Object.values(page.properties).find((property) => property.type === "title");
+  const title = titleProperty?.title.map((t) => t.plain_text ?? t.text?.content ?? "").join("") || fallbackTitle;
   const text = (await blocks(id)).join("\n");
   const excerpt = select(text).trim();
   if (excerpt.length < 80) throw new Error("Empty selected source " + id);
@@ -121,39 +130,72 @@ for (const [id, title, reference, select] of defs) {
   });
   console.log(`${title}: ${excerpt.length} characters selected from real Notion API read`);
 }
-// Discover added readable sources beneath Demo, excluding app-owned announcement pages.
+// Both direct pages and pages in per-module source databases remain discoverable.
+const discovered = [];
 let cursor;
 do {
   const children = await get(
     `blocks/3f43c70a-6285-806a-98e5-e77839ad5c74/children?page_size=100${cursor ? "&start_cursor=" + cursor : ""}`,
   );
   for (const b of children.results) {
-    if (b.type !== "child_page" || sources.some((s) => s.id === b.id)) continue;
-    const title = b.child_page.title;
-    if (title.startsWith("Demo deadline revision ") || title.startsWith("Demo fixture —")) continue;
-    const page = await get("pages/" + b.id);
-    const text = (await blocks(b.id)).join("\n").trim();
-    if (!text) {
-      console.log("Skipped unreadable/attachment-only page: " + title);
-      continue;
+    if (b.type === "child_page") discovered.push({ id: b.id, title: b.child_page.title });
+    if (b.type === "child_database") {
+      let databaseCursor;
+      do {
+        const rows = await get(`databases/${b.id}/query`, {
+          page_size: 100,
+          ...(databaseCursor ? { start_cursor: databaseCursor } : {}),
+        });
+        for (const row of rows.results) {
+          const module = row.properties.Module?.rich_text
+            ?.map((t) => t.plain_text ?? t.text?.content ?? "")
+            .join("");
+          if (module && module !== "COMP30520") continue;
+          const titleProperty = Object.values(row.properties).find(
+            (property) => property.type === "title",
+          );
+          discovered.push({
+            id: row.id,
+            title:
+              titleProperty?.title.map((t) => t.plain_text ?? t.text?.content ?? "").join("") ??
+              "Untitled source",
+          });
+        }
+        databaseCursor = rows.has_more ? rows.next_cursor : undefined;
+      } while (databaseCursor);
     }
-    const isDemo = /synthetic|demo/i.test(title);
-    sources.push({
-      id: b.id,
-      module_id: "COMP30520",
-      kind: "course",
-      title,
-      reference: isDemo
-        ? "Synthetic demo source — not an actual class record"
-        : "Demo source page · readable text",
-      excerpt: text,
-      notion_url: page.url,
-      is_demo: isDemo,
-    });
-    console.log(
-      `${title}: ${text.length} characters synced${isDemo ? " (labelled synthetic demo)" : ""}`,
-    );
   }
   cursor = children.has_more ? children.next_cursor : undefined;
 } while (cursor);
+for (const { id, title } of discovered) {
+  if (sources.some((s) => s.id === id)) continue;
+  if (
+    title.startsWith("Demo deadline revision ") ||
+    title.startsWith("Deadline revision ") ||
+    title.startsWith("Demo fixture —") ||
+    title.includes("— Original deadline")
+  )
+    continue;
+  const page = await get("pages/" + id);
+  const text = (await blocks(id)).join("\n").trim();
+  if (!text) {
+    console.log("Skipped unreadable/attachment-only page: " + title);
+    continue;
+  }
+  const isDemo =
+    page.properties.Provenance?.select?.name === "Synthetic demo" || /synthetic|demo/i.test(title);
+  sources.push({
+    id,
+    module_id: "COMP30520",
+    kind: "course",
+    title,
+    reference: page.properties["Source type"]?.select?.name ?? "Course source",
+    excerpt: text,
+    notion_url: page.url,
+    is_demo: isDemo,
+  });
+  console.log(
+    `${title}: ${text.length} characters synced${isDemo ? " (labelled synthetic demo)" : ""}`,
+  );
+}
 await fs.writeFile("supabase/corpus.json", JSON.stringify(sources, null, 2) + "\n");

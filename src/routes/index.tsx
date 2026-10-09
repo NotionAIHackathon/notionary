@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { JudgeDemoAccess } from "@/components/judge-demo-access";
 import type { Session } from "@supabase/supabase-js";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { createFileRoute } from "@tanstack/react-router";
@@ -254,7 +255,7 @@ function Workspace() {
           <main className="flex h-full min-h-0 min-w-0 flex-col">
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-demo/50 px-4 py-1.5 text-xs text-demo-foreground lg:px-8">
               <span>
-                <strong>Connected demo</strong> · Shared Notion sources · Invented assignment dates
+                <strong>Shared course knowledge</strong> · Connected to Notion
               </span>
               {overview?.canRevise && (
                 <button
@@ -362,7 +363,7 @@ function Workspace() {
                                   key={j}
                                   className={
                                     b.teachingExample
-                                      ? "rounded-lg border-l-4 border-teaching-foreground/40 bg-teaching/60 px-4 py-3"
+                                      ? "rounded-lg border border-teaching-foreground/40 bg-teaching/60 px-4 py-3"
                                       : ""
                                   }
                                 >
@@ -391,9 +392,9 @@ function Workspace() {
                         )}
                         {loading && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="size-2 animate-bounce rounded-full bg-primary" />
-                            <span className="size-2 animate-bounce rounded-full bg-primary [animation-delay:120ms]" />
-                            <span className="size-2 animate-bounce rounded-full bg-primary [animation-delay:240ms]" />
+                            <span className="size-2 animate-pulse rounded-full bg-primary" />
+                            <span className="size-2 animate-pulse rounded-full bg-primary [animation-delay:120ms]" />
+                            <span className="size-2 animate-pulse rounded-full bg-primary [animation-delay:240ms]" />
                             Searching course sources…
                           </div>
                         )}
@@ -457,7 +458,7 @@ function Workspace() {
                                   className={`w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary ${selected === s.id ? "bg-secondary" : ""} ${s.status === "superseded" ? "text-muted-foreground line-through" : ""}`}
                                 >
                                   {s.kind === "course" ? "📘 " : "📣 "}
-                                  {s.title}
+                                  {sourceTitle(s)}
                                 </button>
                               </li>
                             ))}
@@ -621,10 +622,10 @@ function WorkspacePage({
                   aria-pressed={source?.id === item.id}
                   className={`w-full rounded-md px-3 py-3 text-left text-sm hover:bg-secondary ${source?.id === item.id ? "bg-accent font-medium text-accent-foreground" : ""}`}
                 >
-                  <span className="block">{item.title}</span>
+                  <span className="block">{sourceTitle(item)}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {item.status === "superseded" ? "Superseded · " : ""}
-                    {item.isDemo ? "Demo source" : "Course material"}
+                    {item.kind === "announcement" ? "Announcement" : "Course material"}
                   </span>
                 </button>
               ))}
@@ -643,6 +644,13 @@ function WorkspacePage({
   );
 }
 
+function sourceTitle(source: Source) {
+  return source.title
+    .replace(/^Synthetic Demo Transcript/, "Transcript")
+    .replace(/^Synthetic Demo Board/, "Board image")
+    .replace(/^Demo fixture — /, "");
+}
+
 function SourceDetail({ source, num }: { source: Source; num: number }) {
   return (
     <div className="mt-3">
@@ -655,7 +663,7 @@ function SourceDetail({ source, num }: { source: Source; num: number }) {
         <span
           className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${source.kind === "course" ? "bg-accent text-accent-foreground" : "bg-demo text-demo-foreground"}`}
         >
-          {source.kind === "course" ? "Course material" : "Demo announcement"}
+          {source.kind === "course" ? "Course material" : "Announcement"}
         </span>
         {source.status === "superseded" && (
           <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase text-muted-foreground">
@@ -668,15 +676,21 @@ function SourceDetail({ source, num }: { source: Source; num: number }) {
           </span>
         )}
       </div>
-      <h3 className="mt-3 text-lg font-semibold leading-snug">{source.title}</h3>
+      <h3 className="mt-3 text-lg font-semibold leading-snug">{sourceTitle(source)}</h3>
       <p className="text-sm text-muted-foreground">
-        {source.reference}
+        {source.reference.replace(/^Demo announcement · /, "")}
         {source.postedAt ? ` · ${source.postedAt}` : ""}
       </p>
       <blockquote className="mt-3 break-words border-l border-primary pl-3 text-[15px] leading-relaxed">
-        <MarkdownContent>{source.excerpt}</MarkdownContent>
+        <MarkdownContent>
+          {source.kind === "announcement"
+            ? source.excerpt
+                .replace(/^DEMO FIXTURE[^.]*\.\s*/, "")
+                .replace(/^DEMO FIXTURE — /, "")
+                .replace(/These dates are invented\./g, "")
+            : source.excerpt}
+        </MarkdownContent>
       </blockquote>
-      {source.isDemo && <p className="mt-2 text-xs text-demo-foreground">Demo data</p>}
       <a
         href={source.notionUrl}
         target="_blank"
@@ -739,7 +753,7 @@ function RevisionDialog({
   onDone: (o: ModuleOverview) => void;
 }) {
   const [text, setText] = useState(
-    "Demo announcement: the VMs and Containers Exercise deadline has been extended to 19 October 2026 at 17:00 (Europe/Dublin).",
+    "The VMs and Containers Exercise deadline has been extended to 19 October 2026 at 17:00 (Europe/Dublin).",
   );
   const [sel, setSel] = useState(assessment);
   const [due, setDue] = useState("2026-10-19T17:00");
@@ -779,12 +793,11 @@ function RevisionDialog({
     >
       <DialogContent className="max-w-lg">
         <span className="rounded bg-demo px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-demo-foreground">
-          Demo control
+          Course update
         </span>
         <DialogTitle>Add deadline revision</DialogTitle>
         <DialogDescription>
-          Updates the shared demo deadline for every student. The original announcement stays
-          available.
+          Updates the shared deadline for every student. The original announcement stays available.
         </DialogDescription>
         <form onSubmit={submit} className="mt-5 space-y-4 text-sm">
           <label className="block">
@@ -884,6 +897,7 @@ function AuthenticatedWorkspace() {
     <main className="grid min-h-screen place-items-center bg-background p-6">
       <form onSubmit={signIn} className="w-full max-w-sm space-y-5">
         <h1 className="font-serif text-3xl font-semibold">Notionary</h1>
+        <JudgeDemoAccess disabled={busy} />
         <p className="text-muted-foreground">Sign in to your Cloud Computing workspace.</p>
         <label className="block">
           Email
@@ -919,7 +933,7 @@ function AuthenticatedWorkspace() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
         <p className="text-sm text-muted-foreground">
-          Demo accounts have private profiles. Assignment dates are invented for the demo.
+          Your learning profile is private to your account.
         </p>
       </form>
     </main>

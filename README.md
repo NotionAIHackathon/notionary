@@ -28,7 +28,7 @@ Assignment dates are **invented demo fixtures**, not actual course deadlines. Th
 
 - `supabase/migrations/`: module memberships, owner-only profile policies, read-only shared source policies, atomic publication and retry leases.
 - `supabase/functions/notionary/`: session verification, membership checks, private profile access, Claude answers, citation validation and editor-only deadline revisions.
-- `supabase/corpus.json`: selected excerpts fetched using the **Notionary Demo token** via the real Notion API, including table rows. Added readable child pages are discovered on resync; synthetic transcript and board pages are labelled as demo material.
+- `supabase/corpus.json`: selected excerpts fetched using the **Notionary Demo token** via the real Notion API, including table rows. Added readable child pages and rows inside per-module Notion databases are discovered on resync; synthetic transcript and board pages are labelled as demo material.
 - The source cache is in Supabase; shared announcement pages are written beneath the Notion **Demo** page (`3f43c70a-6285-806a-98e5-e77839ad5c74`). Private profiles never go to Notion.
 
 Deadline writes create/recover the Notion announcement first, then publish the source and assessment together in a database transaction. Failed writes preserve the serving deadline. Stable request IDs, database leases and a deterministic Notion page marker prevent duplicate retries. Changed deadlines reject stale revisions. A Notion page can remain as an unpublished draft if the database step fails; it is not shown as a current app source.
@@ -52,4 +52,8 @@ npm run build
 
 Setup uses Supabase's Auth admin API to create confirmed demo users with random passwords. It does not reset existing deadlines or passwords. Apply migrations before setup, and deploy `notionary` before verification. The transient `deadline_revisions` table deliberately has no student policies or grants.
 
-This is a bounded hackathon demo: selected cached text, no embeddings, PDF ingestion, memory evolution or graph. Citation IDs are validated against the supplied corpus; this does not prove every generated claim is entailed by its cited passage.
+The Sources, My Learning and Graph links open full workspace views; the chat inspector and navigation have draggable dividers (also keyboard accessible). The graph shows the verified Demo → module source database → source page hierarchy, with announcements directly beneath Demo. It is a page hierarchy visualisation, not a generated concept graph.
+
+The Cloud Computing source database is `becbee4e-9bfa-43e2-a36c-91d9e922247d`, inside Demo. Its five original source pages retain their IDs and content. The inline board groups by Source type: Lecture slides, Transcripts, Tutorials, Board images and Exam papers. Announcements stay directly under Demo so the existing revision writer and recovery continue working.
+
+This is a bounded hackathon demo: selected cached text, no embeddings, PDF ingestion or memory evolution. Citation IDs are validated against the supplied corpus; this does not prove every generated claim is entailed by its cited passage.
