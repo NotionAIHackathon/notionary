@@ -1,9 +1,11 @@
-import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, cleanup, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MarkdownContent } from "@/components/markdown-content";
 import { SourceGraph } from "@/components/source-graph";
 import { Route } from "@/routes/index";
 import type { ComponentType, ReactNode } from "react";
+
+const mockState = vi.hoisted(() => ({ canRevise: false }));
 
 // jsdom has no panel geometry; exercise navigation independently of drag layout.
 vi.mock("@/components/ui/resizable", () => ({
@@ -26,7 +28,7 @@ vi.mock("@/services/notionary", () => ({
     id: "COMP30520",
     title: "Cloud Computing",
     description: "Shared course",
-    canRevise: false,
+    canRevise: mockState.canRevise,
     version: 1,
     deadline: { assessment: "Exercise", dueLabel: "19 October", sourceId: "lecture" },
     sources: [
@@ -49,9 +51,15 @@ vi.mock("@/services/notionary", () => ({
   }),
   askQuestion: vi.fn(),
   addDeadlineRevision: vi.fn(),
+  syncNotionSources: vi.fn(),
+  uploadCourseSource: vi.fn(),
 }));
 
 afterEach(cleanup);
+
+beforeEach(() => {
+  mockState.canRevise = false;
+});
 
 describe("Course Markdown presentation", () => {
   it("renders headings, emphasis, lists and comparison tables instead of literal markers", () => {
@@ -173,5 +181,18 @@ describe("Workspace navigation", () => {
         screen.getByRole("textbox", { name: "Question about this module" }),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("keeps the course source upload buttons inside the chat bar", async () => {
+    mockState.canRevise = true;
+    window.location.hash = "chat";
+    const Workspace = Route.options.component as ComponentType;
+    render(<Workspace />);
+    await screen.findByRole("heading", { name: "Cloud Computing" });
+    const composer = screen
+      .getByRole("textbox", { name: "Question about this module" })
+      .closest("form")!;
+    expect(within(composer).getByRole("button", { name: "Sync from Notion" })).toBeInTheDocument();
+    expect(within(composer).getByRole("button", { name: "+ Upload source" })).toBeInTheDocument();
   });
 });

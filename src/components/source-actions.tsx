@@ -67,6 +67,7 @@ export function SourceActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
+        type="button"
         disabled={!!busy}
         onClick={sync}
         className="rounded border border-demo-foreground/30 bg-card px-2.5 py-1 font-medium hover:bg-secondary disabled:opacity-50"
@@ -74,6 +75,7 @@ export function SourceActions({
         {busy === "sync" ? "Syncing…" : "Sync from Notion"}
       </button>
       <button
+        type="button"
         disabled={!!busy}
         onClick={() => {
           setError(null);
