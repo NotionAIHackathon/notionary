@@ -30,3 +30,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local credentials and demo account passwords
+.env
+.env.*
+!.env.example
+.demo-accounts.json
+supabase/.temp/
+
+.demo-answers.local.json

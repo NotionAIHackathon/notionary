@@ -1,24 +1,55 @@
-# Pixel Perfect
+# Notionary
 
-Implement exactly the screenshot and nothing else
+Cloud Computing (COMP30520) study demo: one shared course corpus, two authenticated students, private learning profiles, and a shared deadline revision.
 
-This project was built with [Lovable](https://lovable.dev).
+Continue in the [Lovable editor](https://lovable.dev/projects/12642f48-d734-4628-aeac-cdc91b1ae508). The connected repository is `NotionAIHackathon/notionary`.
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/12642f48-d734-4628-aeac-cdc91b1ae508).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Run
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm ci
 npm run dev
 ```
+
+The frontend defaults to the demo Supabase URL and **public** publishable key. Override with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` if required. All private keys belong in Supabase Edge Function secrets.
+
+## Demo
+
+Use Timmy in a normal browser window and John in an incognito window. Sign-in credentials are stored locally in the ignored `.demo-accounts.json` file; they are never committed or embedded in the app.
+
+1. Sign in as both students. Each sees the same lecture, tutorial, historical exam and current assignment announcement, but only their own learning profile.
+2. Ask both: “What's the difference between a virtual machine and a container?” Timmy gets beginner teaching; John gets a concise exam answer and challenging practice. Select citations to inspect cached real source excerpts.
+3. As Timmy (the demo editor), publish a deadline revision. John is a student and cannot publish. Both windows refresh the shared state every five seconds.
+4. Inspect the original announcement in the source list. It remains available as superseded history.
+
+Assignment dates are **invented demo fixtures**, not actual course deadlines. The exam is from **2022/23**, not the current year's assessment. The lecture's ambiguous OS/hypervisor passages are retained. Only selected lecturer instructions from the tutorial are cached; student-written answers are excluded.
+
+## Backend
+
+- `supabase/migrations/`: module memberships, owner-only profile policies, read-only shared source policies, atomic publication and retry leases.
+- `supabase/functions/notionary/`: session verification, membership checks, private profile access, Claude answers, citation validation and editor-only deadline revisions.
+- `supabase/corpus.json`: selected excerpts fetched using the **Notionary Demo token** via the real Notion API, including table rows. Added readable child pages are discovered on resync; synthetic transcript and board pages are labelled as demo material.
+- The source cache is in Supabase; shared announcement pages are written beneath the Notion **Demo** page (`3f43c70a-6285-806a-98e5-e77839ad5c74`). Private profiles never go to Notion.
+
+Deadline writes create/recover the Notion announcement first, then publish the source and assessment together in a database transaction. Failed writes preserve the serving deadline. Stable request IDs, database leases and a deterministic Notion page marker prevent duplicate retries. Changed deadlines reject stale revisions. A Notion page can remain as an unpublished draft if the database step fails; it is not shown as a current app source.
+
+## Setup and verification
+
+Store `NOTION_TOKEN` and `ANTHROPIC_API_KEY` in an ignored `.env.backend.local` file, and `SUPABASE_SECRET_KEY` in an ignored `.env.admin.local` file. Set the first two as Edge Function secrets. `ANTHROPIC_MODEL` defaults to `claude-sonnet-4-6`.
+
+```sh
+node scripts/notion-corpus.mjs
+node scripts/setup-demo.mjs
+node scripts/verify-demo.mjs
+# Publishes the demo extension to 19 October at 17:00 Dublin, preserving history:
+node scripts/verify-demo.mjs --revise
+npm run test
+npx tsc --noEmit
+npx deno check supabase/functions/notionary/index.ts
+npm run lint
+npm run build
+```
+
+Setup uses Supabase's Auth admin API to create confirmed demo users with random passwords. It does not reset existing deadlines or passwords. Apply migrations before setup, and deploy `notionary` before verification. The transient `deadline_revisions` table deliberately has no student policies or grants.
+
+This is a bounded hackathon demo: selected cached text, no embeddings, PDF ingestion, memory evolution or graph. Citation IDs are validated against the supplied corpus; this does not prove every generated claim is entailed by its cited passage.
