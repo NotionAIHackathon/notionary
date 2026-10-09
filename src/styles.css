@@ -36,6 +36,107 @@
   --color-overlay: var(--overlay);
 }
 
+/* Keep course Markdown readable even when an inspector is narrowed. */
+.markdown-content {
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+.markdown-content p {
+  margin-block: 0.75em;
+}
+.markdown-content :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: 1.25em 0.5em;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.markdown-content h1 {
+  font-size: 1.4em;
+}
+.markdown-content h2 {
+  font-size: 1.25em;
+}
+.markdown-content :is(h3, h4, h5, h6) {
+  font-size: 1.1em;
+}
+.markdown-content :is(ul, ol) {
+  margin-block: 0.75em;
+  padding-left: 1.5em;
+}
+.markdown-content ul {
+  list-style: disc;
+}
+.markdown-content ol {
+  list-style: decimal;
+}
+.markdown-content li + li {
+  margin-top: 0.35em;
+}
+.markdown-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.markdown-content a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.markdown-content code {
+  border-radius: 4px;
+  background: var(--secondary);
+  padding: 0.15em 0.3em;
+  font-size: 0.9em;
+}
+.markdown-content pre {
+  overflow-x: auto;
+  margin-block: 1em;
+  padding: 1em;
+  border-radius: 8px;
+  background: var(--secondary);
+}
+.markdown-content pre code {
+  padding: 0;
+  background: transparent;
+  overflow-wrap: normal;
+}
+.markdown-content blockquote {
+  margin-block: 1em;
+  padding-left: 1em;
+  border-left: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.markdown-content table {
+  width: 100%;
+  margin-block: 0.75em;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.markdown-content :is(th, td) {
+  min-width: 7rem;
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown-content th {
+  background: var(--secondary);
+  font-weight: 600;
+}
+.markdown-content hr {
+  margin-block: 1.25em;
+  border-top: 1px solid var(--border);
+}
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
 :root {
   --radius: 0.5rem;
   --background: oklch(0.975 0.008 80);
