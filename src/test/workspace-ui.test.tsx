@@ -114,6 +114,43 @@ describe("Source graph", () => {
   });
 });
 
+describe("Expanded course vision", () => {
+  it("explores many source types without changing the live course sources", () => {
+    const onSelect = vi.fn();
+    render(
+      <SourceGraph title="Cloud Computing" sources={[]} selected={null} onSelect={onSelect} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Demo mode · Long-term vision" }));
+    expect(screen.getByText(/29 nodes/)).toBeInTheDocument();
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: "Inspect W2 · Transcript: VMs vs Containers" }),
+      { key: "Enter" },
+    );
+    expect(
+      screen.getByRole("heading", { name: "W2 · Transcript: VMs vs Containers" }),
+    ).toBeInTheDocument();
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter graph by source type" }), {
+      target: { value: "Tutorials" },
+    });
+    expect(
+      screen.queryByRole("button", { name: "Inspect W2 · Transcript: VMs vs Containers" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Inspect W2 · Tutorial: VMs vs Containers" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Live course" }));
+    expect(screen.queryByRole("button", { name: /Inspect W2/ })).not.toBeInTheDocument();
+  });
+  it("supports zooming and resets the graph viewport", () => {
+    render(<SourceGraph title="Cloud Computing" sources={[]} selected={null} onSelect={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(screen.getByText("120%")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+});
+
 describe("Workspace navigation", () => {
   it("opens Sources and My Learning as full views rather than sidebar anchors", async () => {
     window.location.hash = "chat";

@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase";
 import { JudgeDemoAccess } from "@/components/judge-demo-access";
-import { JudgeDemoAccess } from "@/components/judge-demo-access";
 import type { Session } from "@supabase/supabase-js";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { createFileRoute } from "@tanstack/react-router";
@@ -898,7 +897,6 @@ function AuthenticatedWorkspace() {
     <main className="grid min-h-screen place-items-center bg-background p-6">
       <form onSubmit={signIn} className="w-full max-w-sm space-y-5">
         <h1 className="font-serif text-3xl font-semibold">Notionary</h1>
-        <JudgeDemoAccess disabled={busy} />
         <JudgeDemoAccess disabled={busy} />
         <p className="text-muted-foreground">Sign in to your Cloud Computing workspace.</p>
         <label className="block">
