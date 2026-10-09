@@ -114,7 +114,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export function formatDublin(iso: string) {
   const [d, t] = iso.split("T");
-  const [y, m, day] = d.split("-").map(Number);
+  const [y = 2026, m = 1, day = 1] = d.split("-").map(Number);
   const month = new Date(Date.UTC(y, m - 1, 1)).toLocaleString("en-GB", { month: "long", timeZone: "UTC" });
   return `${day} ${month} ${y}, ${t} Europe/Dublin`;
 }
