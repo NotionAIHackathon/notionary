@@ -52,7 +52,7 @@ npm run build
 
 Setup uses Supabase's Auth admin API to create confirmed demo users with random passwords. It does not reset existing deadlines or passwords. Apply migrations before setup, and deploy `notionary` before verification. The transient `deadline_revisions` table deliberately has no student policies or grants.
 
-The Sources, My Learning and Graph links open full workspace views; the chat inspector and navigation have draggable dividers (also keyboard accessible). The graph shows the verified Demo → module source database → source page hierarchy, with announcements directly beneath Demo. It is a page hierarchy visualisation, not a generated concept graph.
+The Sources, My Learning and Graph links open full workspace views; the chat inspector and navigation have draggable dividers (also keyboard accessible). The live graph connects the Cloud Computing Hub, module source database, source pages and announcements. Demo mode presents the long-term vision as a 29-node course network across five topics, with slides, tutorials, transcripts, board images and exam questions. Both views support pan, zoom, node dragging, filtering, keyboard selection and an expanded presentation view. The vision graph is local presentation data; it does not add sources to Notion or affect AI retrieval.
 
 The Cloud Computing source database is `becbee4e-9bfa-43e2-a36c-91d9e922247d`, inside Demo. Its five original source pages retain their IDs and content. The inline board groups by Source type: Lecture slides, Transcripts, Tutorials, Board images and Exam papers. Announcements stay directly under Demo so the existing revision writer and recovery continue working.
 
