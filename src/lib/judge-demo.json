@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Judge · Beginner",
+    "label": "Try beginner demo",
+    "email": "judge.beginner.notionary@example.com",
+    "password": "Notionary-Judges-Beginner-2026!",
+    "level": "Beginner",
+    "preferences": ["Analogies", "Worked examples"]
+  },
+  {
+    "name": "Judge · Exam",
+    "label": "Try exam demo",
+    "email": "judge.exam.notionary@example.com",
+    "password": "Notionary-Judges-Exam-2026!",
+    "level": "Understands the basics",
+    "preferences": ["Concise exam-focused explanations", "Challenging practice"]
+  }
+]
