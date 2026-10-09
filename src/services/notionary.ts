@@ -84,3 +84,42 @@ export const getMyProfile = () => call<LearningProfile>("profile");
 export const askQuestion = (question: string) => call<Answer>("ask", { question });
 export const addDeadlineRevision = (input: DeadlineRevisionInput) =>
   call<ModuleOverview>("revise", { ...input });
+
+export interface SyncResult {
+  count: number;
+  skipped: string[];
+  syncedAt: string;
+}
+export const syncNotionSources = () => call<SyncResult>("sync");
+export async function uploadCourseSource(
+  file: File,
+  title: string,
+  sourceType: string,
+  requestId: string,
+): Promise<{ source: Source; syncedAt: string }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error("Sign in to upload course sources.");
+  const body = new FormData();
+  body.append("file", file);
+  body.append("title", title);
+  body.append("sourceType", sourceType);
+  body.append("requestId", requestId);
+  const { data, error } = await supabase.functions.invoke("notionary", {
+    body,
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if (error) {
+    let message = error.message;
+    try {
+      const detail = await error.context?.json();
+      message = detail?.error || message;
+    } catch {
+      /* keep the original request error */
+    }
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}

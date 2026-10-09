@@ -1,6 +1,13 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.117.3";
 import { deadlineLabel, dublinInstant, validateAnswer, examFormat } from "./domain.ts";
 import type { Database } from "./database.types.ts";
+import {
+  collectSources,
+  uploadSource,
+  boundedBody,
+  SourceError,
+  MAX_UPLOAD,
+} from "./source-library.ts";
 type SourceRow = Database["public"]["Tables"]["sources"]["Row"];
 type DbClient = SupabaseClient<Database>;
 type NotionBlock = { id: string; type: string; child_page?: { title: string } };
@@ -91,7 +98,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Use POST." }, 405);
   try {
-    if (Number(req.headers.get("content-length") || 0) > 16_000)
+    const multipart = req.headers.get("content-type")?.startsWith("multipart/form-data") ?? false;
+    if (
+      Number(req.headers.get("content-length") || 0) > (multipart ? MAX_UPLOAD + 128_000 : 16_000)
+    )
       throw new HttpError("Request too large.", 413);
     const authorization = req.headers.get("Authorization") || "";
     if (!authorization.startsWith("Bearer "))
@@ -115,7 +125,44 @@ Deno.serve(async (req) => {
         .maybeSingle(),
     );
     if (!membership) throw new HttpError("You do not have access to this module.", 403);
-    const input = await req.json();
+    if (multipart && membership.role !== "editor")
+      throw new HttpError("Only course editors can upload sources.", 403);
+    const body = await boundedBody(req, multipart ? MAX_UPLOAD + 128_000 : 16_000);
+    const form = multipart
+      ? await new Request(req.url, { method: "POST", headers: req.headers, body }).formData()
+      : null;
+    const input = form ? { action: "upload" } : JSON.parse(new TextDecoder().decode(body));
+    if (input.action === "sync" || input.action === "upload") {
+      if (membership.role !== "editor")
+        throw new HttpError("Only course editors can sync or upload sources.", 403);
+      const admin = createClient<Database>(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+        auth: { persistSession: false },
+      });
+      if (input.action === "upload") {
+        if (!form) throw new HttpError("Choose a file to upload.");
+        const source = await uploadSource(form);
+        const result = await admin.from("sources").upsert(source);
+        if (result.error)
+          throw new HttpError(
+            "The file was saved in Notion, but the app could not refresh. Click Sync from Notion to recover.",
+            503,
+          );
+        return json({
+          source: sourceView(
+            checked(await admin.from("sources").select("*").eq("id", source.id).single())!,
+          ),
+          syncedAt: new Date().toISOString(),
+        });
+      }
+      const { sources, skipped } = await collectSources();
+      if (!sources.length)
+        throw new HttpError(
+          "No readable course sources were found. Existing app data is unchanged.",
+          422,
+        );
+      checked(await admin.from("sources").upsert(sources));
+      return json({ count: sources.length, skipped, syncedAt: new Date().toISOString() });
+    }
     if (input.action === "overview") return json(await overview(db, membership.role));
     const profile = async () => {
       const p = checked(
@@ -363,13 +410,13 @@ Deno.serve(async (req) => {
     return json(
       {
         error:
-          e instanceof HttpError
+          e instanceof HttpError || e instanceof SourceError
             ? e.message
             : e instanceof Error && /Dublin|citation|invalid answer/.test(e.message)
               ? e.message
               : "The request failed. Please retry.",
       },
-      e instanceof HttpError ? e.status : 500,
+      e instanceof HttpError || e instanceof SourceError ? e.status : 500,
     );
   }
 });

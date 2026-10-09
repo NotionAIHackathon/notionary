@@ -6,6 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { MarkdownContent } from "@/components/markdown-content";
 import { SourceGraph } from "@/components/source-graph";
+import { SourceActions } from "@/components/source-actions";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   addDeadlineRevision,
@@ -257,6 +258,14 @@ function Workspace() {
               <span>
                 <strong>Shared course knowledge</strong> · Connected to Notion
               </span>
+              {overview?.canRevise && (
+                <SourceActions
+                  onRefresh={(next, sourceId) => {
+                    setOverview(next);
+                    if (sourceId) setSelected(sourceId);
+                  }}
+                />
+              )}
               {overview?.canRevise && (
                 <button
                   onClick={() => setDialogOpen(true)}

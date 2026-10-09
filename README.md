@@ -57,3 +57,23 @@ The Sources, My Learning and Graph links open full workspace views; the chat ins
 The Cloud Computing source database is `becbee4e-9bfa-43e2-a36c-91d9e922247d`, inside Demo. Its five original source pages retain their IDs and content. The inline board groups by Source type: Lecture slides, Transcripts, Tutorials, Board images and Exam papers. Announcements stay directly under Demo so the existing revision writer and recovery continue working.
 
 This is a bounded hackathon demo: selected cached text, no embeddings, PDF ingestion or memory evolution. Citation IDs are validated against the supplied corpus; this does not prove every generated claim is entailed by its cited passage.
+
+## Course source controls
+
+Course editors can use **Sync from Notion** in the course header to refresh
+readable sources from the Cloud Computing module database. The sync preserves
+assignment state and private profiles, retains the curated lecturer-only
+selections for the existing tutorial, and reports attachment-only pages that
+need readable text. Successful syncs show a timestamp.
+
+**Upload source** accepts PDF, PNG, JPEG and WebP files up to 8 MB. The backend
+checks file signatures, extracts readable text using the configured model,
+attaches the original file to a new source page in Notion, and updates the
+Supabase serving copy. Choose a title and source type before uploading. Review
+AI-extracted text against the original when precision matters. Failed cache
+writes can be recovered with Sync; upload retries reuse the existing page.
+Student and judge accounts cannot sync or upload shared course material.
+
+Live verification covered PDF and image uploads, retry recovery, source access
+from both student accounts, editor-only mutation access and unchanged deadlines.
+Temporary verification pages were archived after testing.

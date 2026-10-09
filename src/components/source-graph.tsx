@@ -56,6 +56,7 @@ const materials = [
 ] as const;
 function typeOf(source: Source) {
   if (source.kind === "announcement") return "Announcement";
+  if (colors[source.reference]) return source.reference;
   if (/transcript/i.test(source.title)) return "Transcripts";
   if (/board/i.test(source.title)) return "Board images";
   if (/practical|tutorial/i.test(source.title)) return "Tutorials";
