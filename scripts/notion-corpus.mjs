@@ -113,8 +113,12 @@ const defs = [
 const sources = [];
 for (const [id, fallbackTitle, reference, select] of defs) {
   const page = await get("pages/" + id);
-  const titleProperty = Object.values(page.properties).find((property) => property.type === "title");
-  const title = titleProperty?.title.map((t) => t.plain_text ?? t.text?.content ?? "").join("") || fallbackTitle;
+  const titleProperty = Object.values(page.properties).find(
+    (property) => property.type === "title",
+  );
+  const title =
+    titleProperty?.title.map((t) => t.plain_text ?? t.text?.content ?? "").join("") ||
+    fallbackTitle;
   const text = (await blocks(id)).join("\n");
   const excerpt = select(text).trim();
   if (excerpt.length < 80) throw new Error("Empty selected source " + id);

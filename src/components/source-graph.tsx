@@ -41,7 +41,7 @@ export function SourceGraph({
         viewBox={`0 0 1120 ${height}`}
         className="w-full min-w-[880px]"
         role="group"
-        aria-label="Cloud Computing connects to the Notion Demo page, its source database, and the source documents. Announcements are directly under Demo."
+        aria-label="Cloud Computing connects to the Notion Cloud Computing Hub, its source database, and the source documents. Announcements are directly under the hub."
       >
         <title>Notionary source connections</title>
         <path d={`M 190 ${center} H 240`} stroke="var(--border)" strokeWidth="2" />
@@ -79,7 +79,7 @@ export function SourceGraph({
           href={DEMO_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Open the shared Demo page in Notion"
+          aria-label="Open the Cloud Computing Hub in Notion"
           className="graph-node"
         >
           <rect
@@ -101,7 +101,7 @@ export function SourceGraph({
             fontSize="16"
             fontWeight="600"
           >
-            Demo page ↗
+            Cloud Computing Hub ↗
           </text>
         </a>
         <path
@@ -186,7 +186,7 @@ export function SourceGraph({
       </svg>
       <p className="mt-3 text-xs text-muted-foreground">
         Solid lines connect the module’s source library; dashed lines connect announcements directly
-        under Demo. Select a source to read its excerpt below.
+        under the hub. Select a source to read its excerpt below.
       </p>
     </div>
   );
